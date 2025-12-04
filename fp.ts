@@ -1,38 +1,39 @@
-//#region Iterable utilities
+//#region Common types
+
+export type UnaryFn<X, R> = (x: X) => R | Promise<R>;
+export type BinaryFn<X, Y, R> = (x: X, y: Y) => R | Promise<R>;
 
 export type AnyIterable<T> = Iterable<T> | AsyncIterable<T>;
+
+//#endregion
+
+//#region Iterable utilities
 
 // prettier-ignore
 export type ValueType<I extends AnyIterable<any>>
   = I extends AnyIterable<infer T> ? T : never;
 
-export const forEach = <T>(f: (t: T) => any) =>
+export const forEach = <T>(f: UnaryFn<T, any>) =>
   async function* (it: AnyIterable<T>): AsyncIterable<T> {
     for await (const t of it) {
-      f(t);
+      await f(t);
       yield t;
     }
   };
 
-export const map = <S, T>(f: (s: S) => T) =>
+export const map = <S, T>(f: UnaryFn<S, T>) =>
   async function* (it: AnyIterable<S>): AsyncIterable<T> {
-    for await (const s of it) yield f(s);
+    for await (const s of it) yield await f(s);
   };
 
-export const flatMap = <S, T>(f: (s: S) => AnyIterable<T>) =>
+export const flatMap = <S, T>(f: UnaryFn<S, AnyIterable<T>>) =>
   async function* (it: AnyIterable<S>): AsyncIterable<T> {
-    for await (const s of it) yield* f(s);
+    for await (const s of it) yield* await f(s);
   };
 
-export const awaitEach = async function* <T>(
-  it: AnyIterable<T>
-): AsyncIterable<Awaited<T>> {
-  for await (const t of it) yield await t;
-};
-
-export const filter = <T>(f: (t: T) => boolean) =>
+export const filter = <T>(f: UnaryFn<T, boolean>) =>
   async function* (it: AnyIterable<T>): AsyncIterable<T> {
-    for await (const t of it) if (f(t)) yield t;
+    for await (const t of it) if (await f(t)) yield t;
   };
 
 export const assertNotNull = async function* <T>(
@@ -44,22 +45,28 @@ export const assertNotNull = async function* <T>(
   }
 };
 
-export const acc = <A, T>(a: A, f: (a: A, t: T) => A) =>
+export const acc = <A, T>(a: A, f: BinaryFn<A, T, A>) =>
   async function* (it: AnyIterable<T>): AsyncIterable<A> {
     let val = a;
-    for await (const t of it) yield (val = f(val, t));
+    for await (const t of it) yield (val = await f(val, t));
   };
 
 export const reduce =
-  <A, T>(a: A, f: (a: A, t: T) => A) =>
+  <A, T>(a: A, f: BinaryFn<A, T, A>) =>
   async (it: AnyIterable<T>) => {
     let val = a;
-    for await (const t of it) val = f(val, t);
+    for await (const t of it) val = await f(val, t);
     return val;
   };
 
 export const count = reduce(0, (a) => a + 1);
 export const sum = reduce(0, (a: number, x: number) => a + x);
+
+export const collectToArray = async function <T>(it: AnyIterable<T>) {
+  let a: T[] = [];
+  for await (const t of it) a.push(t);
+  return a;
+};
 
 export const zip = async function* <Ins extends AnyIterable<any>[]>(
   inputs: Ins
@@ -86,6 +93,7 @@ export const window = (n: number) =>
       if (w.length < n) w.push(t);
       else {
         w.copyWithin(0, 1);
+        w[w.length - 1] = t;
         yield w;
       }
     }
@@ -101,6 +109,12 @@ export const takeFirst = async <T>(
   for await (const t of it) return t;
   return undefined;
 };
+
+export const iterate = <T>(f: UnaryFn<T, T>) =>
+  async function* (t: T): AsyncIterable<T> {
+    yield t;
+    while (true) yield (t = await f(t));
+  };
 
 //#endregion
 

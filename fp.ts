@@ -24,6 +24,12 @@ export const flatMap = <S, T>(f: (s: S) => AnyIterable<T>) =>
     for await (const s of it) yield* f(s);
   };
 
+export const awaitEach = async function* <T>(
+  it: AnyIterable<T>
+): AsyncIterable<Awaited<T>> {
+  for await (const t of it) yield await t;
+};
+
 export const filter = <T>(f: (t: T) => boolean) =>
   async function* (it: AnyIterable<T>): AsyncIterable<T> {
     for await (const t of it) if (f(t)) yield t;
@@ -94,6 +100,18 @@ export const takeFirst = async <T>(
 ): Promise<T | undefined> => {
   for await (const t of it) return t;
   return undefined;
+};
+
+//#endregion
+
+//#region FP utilities
+
+export const memo = <K, V>(f: (k: K) => V) => {
+  let map = new Map<K, V>();
+  return (k: K) => {
+    if (!map.has(k)) map.set(k, f(k));
+    return map.get(k)!;
+  };
 };
 
 //#endregion

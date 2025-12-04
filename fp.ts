@@ -6,15 +6,37 @@ export type AnyIterable<T> = Iterable<T> | AsyncIterable<T>;
 export type ValueType<I extends AnyIterable<any>>
   = I extends AnyIterable<infer T> ? T : never;
 
+export const forEach = <T>(f: (t: T) => any) =>
+  async function* (it: AnyIterable<T>): AsyncIterable<T> {
+    for await (const t of it) {
+      f(t);
+      yield t;
+    }
+  };
+
 export const map = <S, T>(f: (s: S) => T) =>
   async function* (it: AnyIterable<S>): AsyncIterable<T> {
     for await (const s of it) yield f(s);
+  };
+
+export const flatMap = <S, T>(f: (s: S) => AnyIterable<T>) =>
+  async function* (it: AnyIterable<S>): AsyncIterable<T> {
+    for await (const s of it) yield* f(s);
   };
 
 export const filter = <T>(f: (t: T) => boolean) =>
   async function* (it: AnyIterable<T>): AsyncIterable<T> {
     for await (const t of it) if (f(t)) yield t;
   };
+
+export const assertNotNull = async function* <T>(
+  it: AnyIterable<T | null | undefined>
+): AsyncIterable<T> {
+  for await (const t of it) {
+    if (t == null) throw new TypeError();
+    yield t;
+  }
+};
 
 export const acc = <A, T>(a: A, f: (a: A, t: T) => A) =>
   async function* (it: AnyIterable<T>): AsyncIterable<A> {
@@ -67,6 +89,13 @@ export const pairs = window(2) as <T>(
   it: AnyIterable<T>
 ) => AsyncIterable<[T, T]>;
 
+export const takeFirst = async <T>(
+  it: AnyIterable<T>
+): Promise<T | undefined> => {
+  for await (const t of it) return t;
+  return undefined;
+};
+
 //#endregion
 
 //#region Math utilities
@@ -74,6 +103,7 @@ export const pairs = window(2) as <T>(
 export const abs = Math.abs;
 export const trunc = Math.trunc;
 
+export const ndigits = (x: number) => x.toString().length;
 export const rem = (a: number, b: number) => ((a % b) + b) % b;
 
 //#endregion

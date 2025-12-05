@@ -1,17 +1,20 @@
 import * as $ from "../../fp.ts";
 
-const solveBothPuzzles = () =>
-  $.all([solvePuzzlePartOne(), solvePuzzlePartTwo()]);
+export const checkSolution = async () => {
+  let input = () => $.nodeFileLines(import.meta.dirname + "/input.txt");
+  $.assertEqual(await solvePuzzlePartOne(input), 1604);
+  $.assertEqual(await solvePuzzlePartTwo(input), 9397);
+};
 
-const solvePuzzlePartOne = () =>
-  $.nodeStdinLines()
+const solvePuzzlePartOne = (input: $.Lazy<$.Lines>) =>
+  $.resolve(input())
     .then($.map((s) => [...s]))
     .then($.collectToArray)
     .then(accessibleCoords)
     .then($.count);
 
-const solvePuzzlePartTwo = () =>
-  $.nodeStdinLines()
+const solvePuzzlePartTwo = (input: $.Lazy<$.Lines>) =>
+  $.resolve(input())
     .then($.map((s) => [...s]))
     .then($.collectToArray)
     .then((map) => ({ rem: 0, map }))
@@ -21,7 +24,6 @@ const solvePuzzlePartTwo = () =>
         map: await removeRolls(map, await accessibleCoords(map)),
       }))
     )
-    .then($.forEach((x) => console.log(x.rem)))
     .then($.pairs)
     .then($.filter(([prev, cur]) => cur.rem === prev.rem))
     .then($.map(([prev, cur]) => cur.rem))
@@ -67,18 +69,3 @@ const removeRolls = async (map: string[][], coords: $.AnyIterable<Coords>) => {
   for await (const [row, col] of coords) map[row][col] = ".";
   return map;
 };
-
-const untilNonDecreasingBy =
-  <T>(f: (t: T) => number | Promise<number>) =>
-  async (it: $.AnyIterable<T>) => {
-    for await (const [prev, cur] of $.pairs(it)) {
-      console.log(".");
-      let fprev = f(prev);
-      let fcur = f(cur);
-      if (fcur > fprev) throw new Error();
-      if (fcur === fprev) return cur;
-    }
-    throw new Error();
-  };
-
-console.log(await solveBothPuzzles());

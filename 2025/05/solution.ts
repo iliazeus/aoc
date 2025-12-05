@@ -1,18 +1,21 @@
 import * as $ from "../../fp.ts";
 
-const solveBothPuzzles = () =>
-  $.all([solvePuzzlePartOne(), solvePuzzlePartTwo()]);
+export const checkSolution = async () => {
+  let input = () => $.nodeFileLines(import.meta.dirname + "/input.txt");
+  $.assertEqual(await solvePuzzlePartOne(input), 652);
+  $.assertEqual(await solvePuzzlePartTwo(input), 341753674214273);
+};
 
-const solvePuzzlePartOne = () =>
-  $.nodeStdinLines()
+const solvePuzzlePartOne = (input: $.Lazy<$.Lines>) =>
+  $.resolve(input())
     .then(parseInput)
     .then(({ ranges, ids }) =>
       $.resolve(ids).then($.filter(containedInSomeRange(ranges)))
     )
     .then($.count);
 
-const solvePuzzlePartTwo = () =>
-  $.nodeStdinLines()
+const solvePuzzlePartTwo = (input: $.Lazy<$.Lines>) =>
+  $.resolve(input())
     .then(parseInput)
     .then(({ ranges }) => ranges.sort((a, b) => a[0] - b[0]))
     .then(mergeRanges)
@@ -57,5 +60,3 @@ const mergeRanges = async function* (ranges: $.AnyIterable<Range>) {
   }
   if (lastRange) yield lastRange;
 };
-
-console.log(await solveBothPuzzles());

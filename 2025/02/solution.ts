@@ -1,17 +1,20 @@
 import * as $ from "../../fp.ts";
 
-const solveBothPuzzles = () =>
-  $.all([solvePuzzlePartOne(), solvePuzzlePartTwo()]);
+export const checkSolution = async () => {
+  let input = () => $.nodeFileLines(import.meta.dirname + "/input.txt");
+  $.assertEqual(await solvePuzzlePartOne(input), 56660955519);
+  $.assertEqual(await solvePuzzlePartTwo(input), 79183223243);
+};
 
-const solvePuzzlePartOne = () =>
-  $.nodeStdinLines()
+const solvePuzzlePartOne = (input: $.Lazy<$.Lines>) =>
+  $.resolve(input())
     .then(parseInput)
     .then($.flatMap(iterateThroughRange))
     .then($.filter(isInvalidPartOne))
     .then($.sum);
 
-const solvePuzzlePartTwo = () =>
-  $.nodeStdinLines()
+const solvePuzzlePartTwo = (input: $.Lazy<$.Lines>) =>
+  $.resolve(input())
     .then(parseInput)
     .then($.flatMap(iterateThroughRange))
     .then($.filter(isInvalidPartTwo))
@@ -23,7 +26,7 @@ const parseInput = (lines: $.AnyIterable<string>) =>
   $.resolve(lines)
     .then($.flatMap((s) => s.split(",")))
     .then($.map((s) => s.match(/(\d+)-(\d+)/)))
-    .then($.assertNotNull)
+    .then($.assertEachNotNull)
     .then($.map(([, _1, _2]) => ({ from: +_1, to: +_2 })));
 
 const iterateThroughRange = function* ({ from, to }: Range) {
@@ -49,5 +52,3 @@ const isInvalidPartTwo = (id: number) => {
   }
   return false;
 };
-
-console.log(await solveBothPuzzles());
